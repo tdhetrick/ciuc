@@ -4,11 +4,11 @@
   "description": "code watcher",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.81.0"
+    "vscode": "^1.74.0"
   },
-  "categories": [
-    "Snippets"
-  ],
+	"activationEvents": ["onStartupFinished"],
+	"main": "./extension.js",
+
   "contributes": {
     "snippets": [
       {
@@ -16,5 +16,9 @@
         "path": "./snippets/snippets.code-snippets"
       }
     ]
-  }
+  },
+  "scripts": {},
+	"devDependencies": {
+		"@types/vscode": "^1.73.0"
+	}
 }

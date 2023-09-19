@@ -29,33 +29,25 @@ function handleCodeMutations(mutationsList, observer) {
  
         let currentCode = "";
 
-        //currentCode = getSpanLines(codeRoot);
-
-        //currentCode = codeRoot.textContent;
-
-        //console.log("current: " + currentCode);
         var levCount  = 0;
         var lineDiff = 0;
 
         for(let mutation of mutationsList) {
 
-            currentCode = getSpanLines(codeRoot);
+            currentCode = mutation.target.textContent;
 
-            console.log("mut: "+mutation.target.textContent);
+           
 
             if (currentCode && prevCode){
                 pcode = prevCode.replace(/[^a-zA-Z\s\*]/g, '');
                 ccode = currentCode.replace(/[^a-zA-Z\s\*]/g, '');
-                //if (pcode != ccode ){
-                    console.log(pcode);
-                    console.log(ccode);
+                if (pcode != ccode ){
+                    console.log("mut: "+ccode +" type: "+mutation.type);
                     levCount += levenshtein(pcode,ccode);
-                    lineDiff += diffLines(pcode,ccode); 
-                   
-                //}
-            
-                //let lnCount = countDiffLines(prevCode,currentCode);
-                console.log("Lev: "+levCount + " lineDiff: " +lineDiff); 
+           
+                }
+
+                console.log("Lev: "+levCount )
                 
             }
 
@@ -68,11 +60,6 @@ function handleCodeMutations(mutationsList, observer) {
 
 }
 
-// function extractTextWithDelimiter(element, delimiter) {
-//     let childSpans = Array.from(element.children).filter(child => child.tagName === "SPAN");
-//     let texts = childSpans.map(span => span.textContent);
-//     return texts.join(delimiter);
-// }
 
 
 let divObserver = new MutationObserver(handleDivMutations);
@@ -104,34 +91,7 @@ function diffLines(pcode, ccode) {
 
     return diffCount;
 }
-function countDiffLines(pcode, ccode) {
 
-    // pcode = pcode.replace(/[^a-zA-Z0-9|]/g, '');
-    // ccode = ccode.replace(/[^a-zA-Z0-9|]/g, '');
-
-    const prev = new Set(pcode.split("|"));
-    const current = new Set(ccode.split("|"));
-    
-    let diffCount = 0;
-
-    // Check for lines in text1 that aren't in text2
-    for (const pline of prev) {
-        if (!current.has(pline)) {
-            console.log("Prev line "+pline+ "removed form current")
-            diffCount++;
-        }
-    }
-
-    // Check for lines in text2 that aren't in text1
-    for (const cline of current) {
-        if (!prev.has(cline)) {
-            console.log("Curent line "+cline+ "added to Prev")
-            diffCount++;
-        }
-    }
-    
-    return diffCount;
-}
 
 function levenshtein(a, b) {
     const matrix = [];

@@ -1,0 +1,52 @@
+from database import db
+import datetime
+
+user_classes = db.Table('user_classes',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('class_id', db.Integer, db.ForeignKey('class.id'))
+)
+
+user_assignments = db.Table('user_assignments',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('assignment_id', db.Integer, db.ForeignKey('assignment.id'))
+)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    fname = db.Column(db.String(50), nullable=False)  
+    lname = db.Column(db.String(50), nullable=False) 
+    email = db.Column(db.String(100), nullable=False, unique=True)  
+    classes = db.relationship('Class', secondary=user_classes, backref='students')
+    assignments = db.relationship('Assignment', secondary=user_assignments, backref='students')
+
+    def __init__(self, username, password, fname, lname, email):
+        self.username = username
+        self.password = password
+        self.fname = fname
+        self.lname = lname
+        self.email = email
+
+
+class Class(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    classname = db.Column(db.String(50), nullable=False)
+    coursenumber = db.Column(db.String(16), nullable=False)   
+    username = db.Column(db.String(50))
+    assignments = db.relationship('Assignment', backref='class', lazy=True)
+
+    def __init__(self, classname, coursenumber):
+        self.classname = classname
+        self.coursenumber = coursenumber
+
+
+class Assignment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)  
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+
+    def __init__(self, title):
+        self.title = title
+        
+

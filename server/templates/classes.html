@@ -1,0 +1,31 @@
+{% extends "./base.html" %}
+
+{% block content %}
+<div class=" w3-container w3-margin-top">
+    <h2 class="w3-center">Class List</h2>
+    
+        <a class="w3-button w3-cyan" href="{{url_for('add_class')}}">Add Class</a>
+        <a class="w3-button w3-cyan" href="{{url_for('assign_class')}}">Assign Class</a>
+
+
+    <ul class="w3-ul w3-card-4">
+        {% for class in classes %}
+            <li class="w3-bar">
+                <span class="w3-bar-item w3-button w3-right">
+                    <a href="{{ url_for('modify_class', class_id=class.id) }}">Modify</a>
+                </span>
+                <div class="w3-bar-item">
+                    <span class="w3-large">{{ class.classname }} ({{ class.coursenumber }})</span><br>
+                </div>
+                <span class="w3-bar-item w3-button w3-right">
+                    <form action="{{url_for('delete_class', class_id = class.id)}}" method="post">
+                        <input type="submit" value="Delete">
+                    </form>
+                </span>
+        
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock %}

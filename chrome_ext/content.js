@@ -1,8 +1,17 @@
 
 var codeRoot = null;
 var prevCode = null;
+var currentCode = "";
 const config = { attributes: true, childList: true, characterData: true, subtree: true };
 
+
+class muteObject {
+    constructor(levVal) {
+        this.datetime = new Date();
+        this.lev = levVal;
+        
+    }
+}
 
 
 function handleDivMutations(mutationsList, observer) {
@@ -26,37 +35,42 @@ function handleDivMutations(mutationsList, observer) {
 
 function handleCodeMutations(mutationsList, observer) {
 
- 
-        let currentCode = "";
+    
 
-        var levCount  = 0;
-        var lineDiff = 0;
+    var levCount  = 0;
+    var lineDiff = 0;
 
-        for(let mutation of mutationsList) {
+    for(let mutation of mutationsList) {
 
-            currentCode = mutation.target.textContent;
+        currentCode = mutation.target.textContent;
 
-           
-
-            if (currentCode && prevCode){
-                pcode = prevCode.replace(/[^a-zA-Z\s\*]/g, '');
-                ccode = currentCode.replace(/[^a-zA-Z\s\*]/g, '');
-                if (pcode != ccode ){
-                    console.log("mut: "+ccode +" type: "+mutation.type);
-                    levCount += levenshtein(pcode,ccode);
-           
-                }
-
-                console.log("Lev: "+levCount )
-                
+        if (currentCode && prevCode){
+            pcode = prevCode.replace(/[^a-zA-Z\s\*]/g, '');
+            ccode = currentCode.replace(/[^a-zA-Z\s\*]/g, '');
+            if (pcode != ccode ){
+                console.log("mut: "+ccode +" type: "+mutation.type);
+                levCount += levenshtein(pcode,ccode);
+        
             }
 
-            prevCode = currentCode;
+            console.log("Lev: "+levCount )
+
+            const muteData = new muteObject(levCount)
+
+            const senddata = {time: new Date(), lev:levCount}
+
+            //pending_data[muteData]
+
+            // Assuming you know the tabId
+            //chrome.tabs.sendMessage(tabId, {type: "backgroundMessage", payload: muteData});
+            chrome.runtime.sendMessage({type: "muteMessage", payload: senddata});
 
             
         }
-             
-        //console.log("Lev: "+levCount + " lineDiff: " +lineDiff); 
+
+        prevCode = currentCode;
+
+    }
 
 }
 

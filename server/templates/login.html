@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <style>
+        .center-div {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;  /* or whatever width you want */
+        }
+    </style>
+</head>
+<body class="w3-pale-blue">
+
+    <!-- Header -->
+    <header class="w3-container w3-blue-grey">
+        <h1>CIUC</h1>
+    </header>
+
+    <div class="w3-container center-div w3-card-4 w3-padding">
+        <div class="w3-container w3-cyan">
+            <h2>Login</h2>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="w3-panel w3-border w3-{{ category }}-border w3-{{ category }}-text">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" class="w3-container">
+            {{ form.hidden_tag() }}
+            <div class="w3-section">
+                {{ form.username.label }}
+                {{ form.username(class="w3-input w3-border", placeholder="Username") }}
+            </div>
+            <div class="w3-section">
+                {{ form.password.label }}
+                {{ form.password(class="w3-input w3-border", placeholder="Password") }}
+            </div>
+            <div>
+                {{ form.submit(class="w3-btn w3-block w3-cyan") }}
+            </div>
+        </form>
+    </div>
+
+</body>
+</html>

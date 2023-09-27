@@ -1,0 +1,38 @@
+{% extends "./base.html" %}
+
+{% block content %}
+
+<div class="w3-row">
+<div class="w3-col m4 w3-container w3-card w3-light-grey w3-margin-top w3-padding w3-display-topmiddle">
+    <h2 class="w3-center">User Form</h2>
+
+    <form class="w3-container" method="post">
+        {{ form.hidden_tag() }}
+
+        <label>{{ form.username.label }}</label>
+        <input class="w3-input w3-border" type="text" placeholder="Username" name="username" required="required" value="{{ form.username.data }}">
+
+        <label>{{ form.password.label }}</label>
+        <input class="w3-input w3-border" type="password" placeholder="Password" name="password" required="required" value="{{ form.password.data }}">
+
+        <label>{{ form.confirm_password.label }}</label>
+        <input class="w3-input w3-border" type="password" placeholder="Confirm Password" name="confirm_password" required="required" value="{{ form.confirm_password.data }}">
+
+        <label>{{ form.fname.label }}</label>
+        <input class="w3-input w3-border" type="text" placeholder="First Name" name="fname" required="required" value="{{ form.fname.data }}">
+
+        <label>{{ form.lname.label }}</label>
+        <input class="w3-input w3-border" type="text" placeholder="Last Name" name="lname" required="required" value="{{ form.lname.data }}">
+
+        <label>{{ form.email.label }}</label>
+        <input class="w3-input w3-border  " type="email" placeholder="Email" name="email" required="required" value="{{ form.email.data }}">
+
+        <button class="w3-button w3-block w3-cyan w3-margin-top" type="submit">{{ form.submit.label }}</button>
+    </form>
+</div></div>
+
+
+
+
+
+{% endblock %}

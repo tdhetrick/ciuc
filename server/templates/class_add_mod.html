@@ -1,0 +1,22 @@
+{% extends "./base.html" %}
+
+{% block content %}
+
+<div class="w3-col m4 w3-container w3-card w3-light-grey w3-margin-top w3-padding ">
+    <h2 class="w3-center">Add New Class</h2>
+
+    <form class="w3-container" method="post">
+        {{ form.hidden_tag() }}
+
+        <label>{{ form.classname.label }}</label>
+        <input class="w3-input w3-border" type="text" placeholder="Class Name" name="classname" required="required" value="{{ form.classname.data }}">
+
+        <label>{{ form.coursenumber.label }}</label>
+        <input class="w3-input w3-border" type="text" placeholder="Course Number" name="coursenumber" required="required" value="{{ form.coursenumber.data }}">
+
+
+        <button class="w3-button w3-block w3-cyan w3-margin-top" type="submit">{{ form.submit.label }}</button>
+    </form>
+</div>
+
+{% endblock %}

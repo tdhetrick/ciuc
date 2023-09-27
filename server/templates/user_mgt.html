@@ -1,0 +1,58 @@
+{% extends "./base.html" %}
+
+{% block content %}
+
+<style>
+    .center-div {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 300px;  /* or whatever width you want */
+    }
+</style>
+
+<div class="w3-col m5">
+
+    <div class="w3-container w3-margin-top w3-display-middle">
+        <h2 class="w3-center">Users List</h2>
+
+        <ul class="w3-ul w3-card-4">
+            {% for user in users %}
+                <li class="w3-bar">
+                    <span class="w3-bar-item w3-button  w3-right">
+                        <a href="{{ url_for('user_modify', user_id=user.id) }}">Edit User</a>
+                    </span>
+                    <div class="w3-bar-item">
+                        <span class="w3-large">{{ user.fname }} {{ user.lname }}</span><br>
+                        <span>{{ user.email }}</span><br>
+                        
+                        
+                        <div class="w3-margin-top">
+                            <strong>Classes:</strong><br>
+                            {% for class in user.classes %}
+                                <span class="w3-tag w3-light-grey w3-margin-top">{{ class.classname }} ({{ class.coursenumber }})</span>
+                            {% else %}
+                                <span>No classes assigned</span>
+                            {% endfor %}
+                        </div>
+                        
+                        
+                        <div class="w3-margin-top">
+                            <strong>Assignments:</strong><br>
+                            {% for assignment in user.assignments %}
+                                <span class="w3-tag w3-light-grey w3-margin-top">{{ assignment.title }}</span>
+                            {% else %}
+                                <span>No assignments assigned</span>
+                            {% endfor %}
+                        </div>
+
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+
+{% endblock %}

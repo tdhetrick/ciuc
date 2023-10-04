@@ -112,10 +112,11 @@ def user_modify(user_id):
     return render_template('user_reg_mod.html', form=form, title="Modify User Info")
 
 @app.route('/users')
-def users_list():
+def users():
     users = User.query.all()
+    all_assignments = Assignment.query.all()
 
-    return render_template('user_mgt.html', users=users)
+    return render_template('user_mgt.html', users=users, all_assignments=all_assignments)
 
 @app.route('/list_classes')
 def list_classes():
@@ -148,8 +149,6 @@ def add_class():
 
     return render_template('class_add_mod.html', form=form)
 
-
-
 @app.route('/modify_class/<int:class_id>', methods=['GET', 'POST'])
 def modify_class(class_id):
     class_item = Class.query.get_or_404(class_id)
@@ -159,7 +158,6 @@ def modify_class(class_id):
         class_item.classname = form.classname.data
         class_item.coursenumber = form.coursenumber.data
         
-
         db.session.commit()
         
         flash('Class updated successfully!', 'success')
@@ -199,6 +197,52 @@ def assign_assignment():
         return redirect(url_for('home'))
     return render_template('assign_assignment.html', form=form)
 
+@app.route('/add_assignment', methods=['GET', 'POST'])
+def add_assignment():
+    form = AssignmentForm()
+    assignments = Assignment.query.all() 
+    
+    print(form.classes.data)
+    
+    if form.validate_on_submit():
+        new_assignment = Assignment(title=form.title.data, class_id=form.classes.data.id)
+        db.session.add(new_assignment)
+        db.session.commit()
+        
+        return redirect(url_for('add_assignment'))
+    
+    return render_template('add_assignments.html', form=form, assignments=assignments)
+
+@app.route('/delete_assignment/<int:assignment_id>', methods=['GET', 'POST'])
+def delete_assignment(assignment_id):
+    assignment_item = Assignment.query.get_or_404(assignment_id)
+    db.session.delete(assignment_item)
+    db.session.commit()
+    return redirect(url_for('add_assignment'))
+
+@app.route('/add_assignment_to_user', methods=['POST'])
+def add_assignment_to_user():
+    user_id = request.form.get('user_id')
+    assignment_id = request.form.get('assignment_id')
+     
+    user = User.query.get_or_404(user_id)
+    assignment = Assignment.query.get_or_404(assignment_id)
+
+    if user and assignment:
+        unique_key = f"CIUCTAG{user_id}A{assignment_id}"
+        
+        existing_assignment = UserAssignment.query.filter_by(user_id=user_id, assignment_id=assignment_id).first()
+        
+        if not existing_assignment:
+            user_assignment = UserAssignment(user_id=user_id, assignment_id=assignment_id, unique_key=unique_key)
+            db.session.add(user_assignment)
+            db.session.commit()
+        else:
+          print('existing fail')      
+    else:
+        print('User or assignment not correct')        
+
+    return redirect(url_for('users'))
 
 
 

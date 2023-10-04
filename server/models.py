@@ -6,10 +6,10 @@ user_classes = db.Table('user_classes',
     db.Column('class_id', db.Integer, db.ForeignKey('class.id'))
 )
 
-user_assignments = db.Table('user_assignments',
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
-    db.Column('assignment_id', db.Integer, db.ForeignKey('assignment.id'))
-)
+# user_assignments = db.Table('user_assignments',
+#     db.Column('user_id', db.Integer, db.ForeignKey('user.id')),
+#     db.Column('assignment_id', db.Integer, db.ForeignKey('assignment.id'))
+# )
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -19,7 +19,8 @@ class User(db.Model):
     lname = db.Column(db.String(50), nullable=False) 
     email = db.Column(db.String(100), nullable=False, unique=True)  
     classes = db.relationship('Class', secondary=user_classes, backref='students')
-    assignments = db.relationship('Assignment', secondary=user_assignments, backref='students')
+    #assignments = db.relationship('Assignment', secondary=user_assignments, backref='students')
+    assigned_tasks = db.relationship('UserAssignment', back_populates='user')
 
     def __init__(self, username, password, fname, lname, email):
         self.username = username
@@ -45,8 +46,27 @@ class Assignment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)  
     class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+    users_with_assignment = db.relationship('UserAssignment', backref='assignment')
 
-    def __init__(self, title):
+
+    def __init__(self, title, class_id):
         self.title = title
+        self.class_id = class_id
+        
+class UserAssignment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)  # A primary key for this table
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignment.id'))
+    unique_key = db.Column(db.String(120), unique=True, nullable=False)
+    
+    # Relationships
+    user = db.relationship('User', back_populates='assigned_tasks')
+    #assignment = db.relationship('Assignment', back_populates='users_with_assignment')
+
+    def __init__(self, user_id, assignment_id, unique_key):
+        self.user_id = user_id
+        self.assignment_id = assignment_id
+        self.unique_key = unique_key
+
         
 

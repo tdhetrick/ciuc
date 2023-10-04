@@ -2,28 +2,16 @@
 
 {% block content %}
 
-<style>
-    .center-div {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 300px;  /* or whatever width you want */
-    }
-</style>
 
-<div class="w3-col m5">
-
-    <div class="w3-container w3-margin-top w3-display-middle">
-        <h2 class="w3-center">Users List</h2>
-
-        <ul class="w3-ul w3-card-4">
+        <h2 class="w3-center">Users</h2>
+    <div class="w3-row-padding users-grid">  
             {% for user in users %}
-                <li class="w3-bar">
+                <div class="w3-col s12 m6 l4">
+                    <div class="w3-card">
                     <span class="w3-bar-item w3-button  w3-right">
                         <a href="{{ url_for('user_modify', user_id=user.id) }}">Edit User</a>
                     </span>
-                    <div class="w3-bar-item">
+                    <div class="w3-container">
                         <span class="w3-large">{{ user.fname }} {{ user.lname }}</span><br>
                         <span>{{ user.email }}</span><br>
                         
@@ -40,19 +28,56 @@
                         
                         <div class="w3-margin-top">
                             <strong>Assignments:</strong><br>
-                            {% for assignment in user.assignments %}
-                                <span class="w3-tag w3-light-grey w3-margin-top">{{ assignment.title }}</span>
-                            {% else %}
-                                <span>No assignments assigned</span>
-                            {% endfor %}
+                            <ul class="w3-ul w3-card-4">
+                                {% for ua in user.assigned_tasks %}
+                                
+                                    <li class="w3-padding-small">{{ ua.assignment.title }} Key: {{ua.unique_key}}</li>
+                                
+                                {% else %}
+                                    <span>No assignments assigned</span>
+                                {% endfor %} 
+                            </ul>   
                         </div>
 
+                    
+                        <div class="w3-margin-top w3-margin-bottom">
+                            <strong>Add Assignment:</strong><br>
+                            
+                            <!-- Form for adding assignment to user -->
+                            
+                            <form action="{{ url_for('add_assignment_to_user') }}" method="post" class="w3-container">
+
+                                <input type="hidden" name="user_id" value="{{ user.id }}">  <!-- Hidden field to pass user ID -->
+                            
+                                <div class="w3-row">
+                            
+                                    <!-- Dropdown for available assignments -->
+                                    <div class="w3-col s8 m9 l10">
+                                        <select name="assignment_id" class="w3-select w3-border">
+                                            {% for assignment in all_assignments %}
+                                                <option value="{{ assignment.id }}">{{ assignment.title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                            
+                                    <!-- Submit button to add the selected assignment to the user -->
+                                    <div class="w3-col s4 m3 l2">
+                                        <button type="submit" class="w3-button w3-blue w3-block">Add</button>
+                                    </div>
+                            
+                                </div>
+                            
+                            </form>
+                            
+                        
+                        </div>
                     </div>
-                </li>
+                </div>
+            </div>
             {% endfor %}
-        </ul>
+      
     </div>
-</div>
+
 
 
 {% endblock %}

@@ -3,7 +3,27 @@
 <head>
     <title>{{ title }}</title>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <style>
+        .max-width-800 {
+            max-width: 800px;
+            margin: auto;  /* Centers the container */
+        }
+        .center-div {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;  /* or whatever width you want */
+        }
+        .users-grid {
+            display: flex;        /* Set the container to be a flex container */
+            flex-wrap: wrap;      /* Allow items to wrap to the next line */
+            gap: 1rem;            /* Set a gap between the items (optional) */
+            justify-content: space-around;  /* Distribute items evenly */
+        }
+    </style>
 </head>
+
 <body class="w3-pale-blue">
 
 <!-- Header -->
@@ -14,8 +34,9 @@
 <div class="w3-bar w3-border w3-card-4 w3-cyan">
     <a class="w3-bar-item w3-button" href="{{url_for('home')}}">Home</a>
     <a class="w3-bar-item w3-button" href="{{url_for('list_classes')}}">Classes</a>
+    <a class="w3-bar-item w3-button" href="{{url_for('add_assignment')}}">Assignments</a>
     <a class="w3-bar-item w3-button" href="{{url_for('user_reg')}}">User Rregistration</a>
-    <a class="w3-bar-item w3-button" href="{{url_for('users_list')}}">User List</a>
+    <a class="w3-bar-item w3-button" href="{{url_for('users')}}">Users</a>
     <a class="w3-bar-item w3-button w3-right" href="{{url_for('logout')}}">Logout</a>
 </div>
 

@@ -45,3 +45,8 @@ class AssignAssignmentForm(FlaskForm):
     user = QuerySelectField('User', query_factory=lambda: User.query.all(), get_label="username")
     assignments = QuerySelectMultipleField('Assignments', query_factory=lambda: Assignment.query.all(), get_label="title")
     submit = SubmitField('Assign Assignment')
+
+class AssignmentForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    classes = QuerySelectField('Classes', query_factory=lambda: Class.query.all(), get_label="classname")
+    submit = SubmitField('Add Assignment')

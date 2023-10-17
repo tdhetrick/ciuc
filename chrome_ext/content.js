@@ -2,7 +2,11 @@
 var codeRoot = null;
 var prevCode = null;
 var currentCode = "";
+var assignmentKey = "";
+const basetag = "CIUCTAG"
 const config = { attributes: true, childList: true, characterData: true, subtree: true };
+let lines = [];
+let previousLines = [];
 
 
 class muteObject {
@@ -17,7 +21,20 @@ class muteObject {
 function handleDivMutations(mutationsList, observer) {
     for(let mutation of mutationsList) {
         if (mutation.type === 'childList' || mutation.type === 'characterData') {
-            if (mutation.target.textContent.includes("TRACKME123")) {
+            if (mutation.target.textContent.includes(basetag)) {
+
+                const regexPattern = "#" + basetag + "\\S*?#"; //pattern
+                const regex = new RegExp(regexPattern, "g"); //build expression
+                const match = mutation.target.textContent.match(regex); //find a match
+                
+
+                if (match && match.length) {
+                    assignmentKey = match[0].replace(/#/g, ''); //clean off #
+                    console.log("student key" + assignmentKey)
+                }else{
+                    console.log("student key not found in " + mutation.target.textContent)
+                }
+
                 console.log("***Started monitoring this code div.");
                 console.log(mutation.target);
                 observer.disconnect();
@@ -48,16 +65,19 @@ function handleCodeMutations(mutationsList, observer) {
             pcode = prevCode.replace(/[^a-zA-Z\s\*]/g, '');
             ccode = currentCode.replace(/[^a-zA-Z\s\*]/g, '');
             if (pcode != ccode ){
-                console.log("mut: "+ccode +" type: "+mutation.type);
+                //console.log("mut: "+ccode +" type: "+mutation.type);
                 levCount += levenshtein(pcode,ccode);
-        
+
+                let change = updateLinesArray(codeRoot);
+                console.log(lines)
+                console.log(change)
             }
 
             console.log("Lev: "+levCount )
 
-            const muteData = new muteObject(levCount)
+            //const muteData = new muteObject(levCount)
 
-            const senddata = {time: new Date(), lev:levCount}
+            const senddata = {assignmentKey:assignmentKey ,time: new Date(), lev:levCount, codeEvent:""}
 
             //pending_data[muteData]
 
@@ -133,4 +153,88 @@ function levenshtein(a, b) {
     }
     return matrix[b.length][a.length];
 }
+
+
+function updateLinesArray(target) {
+    
+    const divElements = target.querySelectorAll(':scope > div');
+    const rawLines = Array.from(divElements).map(div => div.textContent);
+    const currentLines = rawLines.map(str => str.replace(/[^a-zA-Z0-9]/g, ''));
+
+    if (previousLines.length === 0){
+        previousLines = currentLines.slice();
+    }
+
+    let changes = {
+        added: [],
+        removed: [],
+        modified: [],
+        count: 0
+    };
+
+    if (currentLines.length === 0) return;
+
+    // If the lines array is empty
+    if (lines.length === 0) {
+        lines = currentLines;
+        return;
+    }
+
+    //  new lines at the top
+    if (currentLines[0] !== lines[0]) {
+        // Check if new line or  scrolling
+        if (!lines.includes(currentLines[0])) {
+            lines.unshift(currentLines[0]);
+        }
+    }
+
+    //  new lines at the bottom
+    if (currentLines[currentLines.length - 1] !== lines[lines.length - 1]) {
+        // Check if new line or  scrolling
+        if (!lines.includes(currentLines[currentLines.length - 1])) {
+            lines.push(currentLines[currentLines.length - 1]);
+        }
+    }
+
+    //additions and modifications
+    for (let i = 0; i < currentLines.length; i++) {
+        
+        if (i >= previousLines.length || previousLines[i] !== currentLines[i]) {
+            let modified = false
+            
+            if (i < previousLines.length){    
+              modified = (currentLines[i].includes(previousLines[i]) || previousLines[i].includes(currentLines[i]));
+              console.log("current: "+currentLines[i] +" prev: "+ previousLines[i]+ " i: "+i)  
+            }
+                      
+            if ((i >= previousLines.length || !previousLines[i].trim()) && !modified) {
+                changes.added.push(currentLines[i]);
+                
+            } else if (modified) {
+                changes.modified.push(currentLines[i]);
+            } else {
+                changes.added.push(currentLines[i]);
+            }
+            changes.count++
+        }
+    }
+
+    // removals
+    for (let i = 0; i < previousLines.length; i++) {
+        let modified = false
+        if (i < currentLines.length){          
+           modified = (currentLines[i].includes(previousLines[i]) || previousLines[i].includes(currentLines[i]));  
+        }
+
+        if (!currentLines.includes(previousLines[i]) && !modified) {
+            changes.removed.push(previousLines[i]);
+        }
+    }
+
+    // Update previousLines for the next comparison
+    previousLines = currentLines.slice();
+
+    return changes;
+}
+
 

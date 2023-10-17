@@ -3,6 +3,9 @@ from flask_cors import CORS
 #from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from database import db
+from datetime import datetime
+import pandas as pd
+import numpy as np
 
 
 from forms import *
@@ -30,13 +33,43 @@ def home():
 
 @app.route('/databucket', methods=['POST'])
 def receive_data():
-    print("Received data start:")
     data = request.json
     if not data:
         return jsonify({'message': 'No data provided'}), 400
-
-    print("Received data:", len(data))
     
+    df = pd.DataFrame(data)
+    
+    df['time'] = pd.to_datetime(df['time'], format="%Y-%m-%dT%H:%M:%S.%fZ")
+    
+    df = df.drop_duplicates(subset=['assignmentKey', 'time'])
+    
+    df = df[df['lev'] != 0]
+    
+    df.set_index('time', inplace=True)
+    
+    code_events_df = df[df['codeEvent'] != '']
+    
+    df_filtered = df[df['codeEvent'] == '']
+    
+    df_resampled = df_filtered.resample('1S').agg({'lev': 'sum'})
+    
+    first_key = df['assignmentKey'].iloc[0]
+    df_resampled['assignmentKey'] = first_key
+    
+    final = pd.concat([df_resampled, code_events_df])
+    
+    final.reset_index(inplace=True)
+    final = final.sort_values(by='time')
+    
+    
+    print(final)
+
+    for index, row in final.iterrows():
+        #{'assignmentKey': 'CIUCTAG1A2', 'time': '2023-10-04T17:27:47.596Z', 'lev': 0, 'codeEvent': ''}
+
+        code_event = CodeEvent(row['assignmentKey'], row['time'],row['lev'],row['codeEvent'] )
+        db.session.add(code_event)
+        db.session.commit()
 
     return jsonify({'message': 'Data received successfully'}), 200
 

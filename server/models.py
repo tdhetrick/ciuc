@@ -69,4 +69,15 @@ class UserAssignment(db.Model):
         self.unique_key = unique_key
 
         
-
+class CodeEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_key = db.Column(db.String(16), nullable=False)
+    time = db.Column(db.DateTime)
+    lev_count = db.Column(db.Integer)  
+    event = db.Column(db.String(16))
+ 
+    def __init__(self, assignment_key, time ,lev_count ,event):
+        self.assignment_key = assignment_key
+        self.time = time
+        self.lev_count = lev_count
+        self.event = event

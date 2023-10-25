@@ -39,32 +39,35 @@ def receive_data():
     
     df = pd.DataFrame(data)
     
+    if df.empty:
+        return            
+    
     df['time'] = pd.to_datetime(df['time'], format="%Y-%m-%dT%H:%M:%S.%fZ")
-    
-    df = df.drop_duplicates(subset=['assignmentKey', 'time'])
-    
+
     df = df[df['lev'] != 0]
     
-    df.set_index('time', inplace=True)
-    
-    code_events_df = df[df['codeEvent'] != '']
-    
-    df_filtered = df[df['codeEvent'] == '']
-    
-    df_resampled = df_filtered.resample('1S').agg({'lev': 'sum'})
-    
-    first_key = df['assignmentKey'].iloc[0]
-    df_resampled['assignmentKey'] = first_key
-    
-    final = pd.concat([df_resampled, code_events_df])
-    
-    final.reset_index(inplace=True)
-    final = final.sort_values(by='time')
-    
-    
-    print(final)
+    df.sort_values(by='time', inplace=True)
+      
+    i = 0  
+    while i < len(df) - 1:
+        current_time = df.iloc[i]['time']
+        next_time = df.iloc[i+1]['time']
 
-    for index, row in final.iterrows():
+        # If the difference between current and next time is less than 1 second and have the same codeEvent
+        if (next_time - current_time).total_seconds() < 1 and df.iloc[i]['codeEvent'] == df.iloc[i+1]['codeEvent']:
+            df.at[df.index[i], 'lev'] += df.iloc[i+1]['lev']
+            df.drop(df.index[i+1], inplace=True)
+            df.reset_index(drop=True, inplace=True)  # Reset index after dropping row
+        else:
+            i += 1
+    
+    df['time'] = df['time'].dt.round('S')
+
+
+    df = df.sort_values(by='time')
+
+
+    for index, row in df.iterrows():
         #{'assignmentKey': 'CIUCTAG1A2', 'time': '2023-10-04T17:27:47.596Z', 'lev': 0, 'codeEvent': ''}
 
         code_event = CodeEvent(row['assignmentKey'], row['time'],row['lev'],row['codeEvent'] )
@@ -264,6 +267,8 @@ def add_assignment_to_user():
     if user and assignment:
         unique_key = f"CIUCTAG{user_id}A{assignment_id}"
         
+        unique_key = unique_key.ljust(16,'X')
+        
         existing_assignment = UserAssignment.query.filter_by(user_id=user_id, assignment_id=assignment_id).first()
         
         if not existing_assignment:
@@ -277,7 +282,29 @@ def add_assignment_to_user():
 
     return redirect(url_for('users'))
 
-
+@app.route('/assignmentdata/<assignment_key>')
+def assignmentdata(assignment_key):
+    #CIUCTAG1A1XXXXXX
+    key = assignment_key[7:] 
+    
+    events = CodeEvent.query.filter_by(assignment_key=key).all()
+    df = pd.DataFrame([(e.time, e.lev_count, e.event) for e in events], columns=['time', 'value', 'event'])
+    
+    # Round times to the nearest second
+    #df['time'] = df['time'].dt.round('S')
+    
+    # Group by 'time' and 'event' and sum the values
+    df_grouped = df.groupby(['time', 'event']).sum().reset_index()
+    
+    # Pivot the dataframe to have 'events' as columns
+    df_pivot = df_grouped.pivot(index='time', columns='event', values='value').fillna(0).reset_index()
+    
+    # Convert DataFrame to JSON
+    #data_json = df_pivot.to_json(orient='records', date_format='iso')
+    data = df_pivot.to_dict(orient='records')
+    
+    
+    return render_template('assignment_chart.html', data=data)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,38 @@
+{% extends "./base.html" %}
+
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<canvas id="myChart" width="800" height="400"></canvas>
+
+<script>
+    const dataJson = {{ data|tojson }};
+    const labels = dataJson.map(item => item.time);
+    const datasets = [];
+    
+    for (const key in dataJson[0]) {
+        if (key !== 'time') {
+            const dataset = {
+                label: key,
+                data: dataJson.map(item => item[key]),
+                fill: false,
+                //borderColor: /* Choose a color based on the event type or set a default */
+            };
+            datasets.push(dataset);
+        }
+    }
+
+    const ctx = document.getElementById('myChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        
+    });
+</script>
+
+
+
+{% endblock %}

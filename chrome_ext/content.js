@@ -65,10 +65,11 @@ function handleCodeMutations(mutationsList, observer) {
             pcode = prevCode.replace(/[^a-zA-Z\s\*]/g, '');
             ccode = currentCode.replace(/[^a-zA-Z\s\*]/g, '');
             if (pcode != ccode ){
-                //console.log("mut: "+ccode +" type: "+mutation.type);
-                levCount += levenshtein(pcode,ccode);
+                
+                levCount = levenshtein(pcode,ccode);
 
                 let change = updateLinesArray(codeRoot);
+                change.lev = levCount;
                 console.log(lines)
                 console.log(change)
             }
@@ -159,7 +160,8 @@ function updateLinesArray(target) {
     
     const divElements = target.querySelectorAll(':scope > div');
     const rawLines = Array.from(divElements).map(div => div.textContent);
-    const currentLines = rawLines.map(str => str.replace(/[^a-zA-Z0-9]/g, ''));
+    let currentLines = rawLines.map(str => str.replace(/[^a-zA-Z0-9]/g, ''));
+    currentLines = currentLines.filter(str => str.trim() !== '');
 
     if (previousLines.length === 0){
         previousLines = currentLines.slice();
@@ -175,26 +177,41 @@ function updateLinesArray(target) {
     if (currentLines.length === 0) return;
 
     // If the lines array is empty
-    if (lines.length === 0) {
-        lines = currentLines;
-        return;
-    }
+    // if (lines.length === 0) {
+    //     lines = currentLines;
+    //     return;
+    // }
 
-    //  new lines at the top
-    if (currentLines[0] !== lines[0]) {
-        // Check if new line or  scrolling
-        if (!lines.includes(currentLines[0])) {
-            lines.unshift(currentLines[0]);
-        }
-    }
+    // len = currentLines.length;
+    // line_gap = Math.floor(currentLines.length / 3)
+
+    // console.log(currentLines)
+
+    // console.log("current: "+currentLines[line_gap] +" prev: "+ previousLines[line_gap + 1]+ "line_gap"+ line_gap) 
+    // //  new lines at the top
+    // if (currentLines[line_gap] == previousLines[line_gap + 1] || currentLines[line_gap] == previousLines[line_gap + 2] || currentLines[line_gap] == previousLines[line_gap + 3]) {
+    //     // Check if new line or  scrolling
+    //     // if (!lines.includes(currentLines[0])) {
+    //     //     lines.unshift(currentLines[0]);
+            
+    //     // }
+    //     console.log('scroll down')
+    // }
+
+    //   //  new lines at the top
+    // if (currentLines[line_gap] == previousLines[line_gap - 1] || currentLines[line_gap] == previousLines[line_gap - 2] || currentLines[line_gap] == previousLines[line_gap - 3]) {
+ 
+    //     console.log('scroll up')
+    // }
 
     //  new lines at the bottom
-    if (currentLines[currentLines.length - 1] !== lines[lines.length - 1]) {
-        // Check if new line or  scrolling
-        if (!lines.includes(currentLines[currentLines.length - 1])) {
-            lines.push(currentLines[currentLines.length - 1]);
-        }
-    }
+    // if (currentLines[currentLines.length - 1] !== lines[lines.length - 2]) {
+    //     // Check if new line or  scrolling
+    //     if (!lines.includes(currentLines[currentLines.length - 1])) {
+    //         lines.push(currentLines[currentLines.length - 1]);
+    //     }
+    //     console.log('scroll down')
+    // }
 
     //additions and modifications
     for (let i = 0; i < currentLines.length; i++) {
@@ -204,7 +221,7 @@ function updateLinesArray(target) {
             
             if (i < previousLines.length){    
               modified = (currentLines[i].includes(previousLines[i]) || previousLines[i].includes(currentLines[i]));
-              console.log("current: "+currentLines[i] +" prev: "+ previousLines[i]+ " i: "+i)  
+              //console.log("current: "+currentLines[i] +" prev: "+ previousLines[i]+ " i: "+i)  
             }
                       
             if ((i >= previousLines.length || !previousLines[i].trim()) && !modified) {

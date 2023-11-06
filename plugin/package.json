@@ -15,7 +15,13 @@
         "language": "javascript",
         "path": "./snippets/snippets.code-snippets"
       }
-    ]
+    ],
+    "commands": [
+      {
+          "command": "extension.retryConnection",
+          "title": "Retry Server Connection"
+      }
+  ]
   },
   "scripts": {},
 	"devDependencies": {

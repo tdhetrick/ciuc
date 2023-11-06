@@ -2,12 +2,20 @@
 
 {% block content %}
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<canvas id="myChart" width="800" height="400"></canvas>
+<!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --> 
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js" integrity="sha512-6HrPqAvK+lZElIZ4mZ64fyxIBTsaX5zAFZg2V/2WT+iKPrFzTzvx6QAsLW2OaLwobhMYBog/+bvmIEEGXi0p1w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js" integrity="sha512-Hn1w6YiiFw6p6S2lXv6yKeqTk0PLVzeCwWY9n32beuPjQ5HLcvz5l2QsP+KilEr1ws37rCTw3bZpvfvVIeTh0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@^1"></script>
+
+<canvas id="myChart" width="800" height="200"></canvas>
 
 <script>
     const dataJson = {{ data|tojson }};
-    const labels = dataJson.map(item => item.time);
+    console.log(dataJson) 
+    const labels = dataJson.map(item => moment(item.time));
+
+
     const datasets = [];
     
     for (const key in dataJson[0]) {
@@ -15,19 +23,59 @@
             const dataset = {
                 label: key,
                 data: dataJson.map(item => item[key]),
-                fill: false,
+                //fill: false,
                 //borderColor: /* Choose a color based on the event type or set a default */
             };
             datasets.push(dataset);
         }
     }
 
+    console.log(datasets) 
+    console.log(labels) 
+
     const ctx = document.getElementById('myChart').getContext('2d');
     new Chart(ctx, {
-        type: 'line',
+        type: 'scatter',
         data: {
             labels: labels,
             datasets: datasets
+        },
+        options: {
+            scales:{      
+                y: {
+                      display: true,
+                      ticks: {
+                          beginAtZero: false,
+                          steps: 5,
+                          stepValue: 5
+                      }
+                  },
+                  x: {
+                    display: true,
+                    type: 'time',
+                    time: {
+                        unit: 'minute',
+                        stepSize: 60,
+                        displayFormats: {
+                            minute: 'MM/DD hA',
+                            hour: 'MM/DD hA',
+                        },
+                    },
+                },
+                 
+            },
+            maintainAspectRatio: false,
+            responsive: true,
+            
+            title: {
+                display: true,
+                text: 'Edit History'
+            },
+            plugins:{
+                annotation:{
+                    annotations:this.boxes
+                }
+            }
         },
         
     });

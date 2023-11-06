@@ -290,19 +290,20 @@ def assignmentdata(assignment_key):
     events = CodeEvent.query.filter_by(assignment_key=key).all()
     df = pd.DataFrame([(e.time, e.lev_count, e.event) for e in events], columns=['time', 'value', 'event'])
     
-    # Round times to the nearest second
-    #df['time'] = df['time'].dt.round('S')
-    
-    # Group by 'time' and 'event' and sum the values
     df_grouped = df.groupby(['time', 'event']).sum().reset_index()
     
-    # Pivot the dataframe to have 'events' as columns
     df_pivot = df_grouped.pivot(index='time', columns='event', values='value').fillna(0).reset_index()
     
-    # Convert DataFrame to JSON
-    #data_json = df_pivot.to_json(orient='records', date_format='iso')
-    data = df_pivot.to_dict(orient='records')
+    #{BULK CHANGE: 0, DELETE: 0, LINE UPDATE: 0, NEW LINE: 4, time: 'Wed, 25 Oct 2023 16:46:34 GMT'}
+    #df_all_time = df_pivot.to_dict(orient='records')
     
+    df_all_time = df_pivot.set_index('time')
+    
+    df_resampled =  df_all_time.resample('30T').sum().reset_index()
+    df_resampled = df_resampled[df_resampled.drop(columns='time').sum(axis=1) != 0]
+
+    
+    data = df_resampled.to_dict(orient='records')
     
     return render_template('assignment_chart.html', data=data)
 

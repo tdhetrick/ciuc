@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session, request
 from flask_cors import CORS
 #from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -285,9 +285,25 @@ def add_assignment_to_user():
 @app.route('/assignmentdata/<assignment_key>')
 def assignmentdata(assignment_key):
     #CIUCTAG1A1XXXXXX
+    
     key = assignment_key[7:] 
     
-    events = CodeEvent.query.filter_by(assignment_key=key).all()
+    start = request.args.get('start')
+    end = request.args.get('end')
+    
+    print(start,end)
+    
+    if start and end:
+        print("range")
+        events = CodeEvent.query.filter( 
+                CodeEvent.assignment_key == key,
+                CodeEvent.time >= start,
+                CodeEvent.time <= end
+            ).all()
+    else:
+        print("no range")
+        events = CodeEvent.query.filter_by(assignment_key=key).all()    
+        
     df = pd.DataFrame([(e.time, e.lev_count, e.event) for e in events], columns=['time', 'value', 'event'])
     
     df_grouped = df.groupby(['time', 'event']).sum().reset_index()
@@ -298,34 +314,45 @@ def assignmentdata(assignment_key):
        
     df_all_time = df_pivot.set_index('time')
     
-    df_resampled =  df_all_time.resample('30T').sum().reset_index()
+    df_resampled =  df_all_time.resample('10S').sum().reset_index()
     df_resampled = df_resampled[df_resampled.drop(columns='time').sum(axis=1) != 0]
     
     data = df_resampled.to_dict(orient='records')
     #{'time': Timestamp('2023-10-25 16:30:00'), 'BULK CHANGE': 9.0, 'DELETE': 280.0, 'LINE UPDATE': 85.0, 'NEW LINE': 16.0}
     
+    # Compute work sessions
     threshold = datetime.timedelta(hours=1)
-    session_new = {'start_time': start, 'end_time': ts, 'BULK CHANGE': 0, 'DELETE': 0, 'LINE UPDATE': 0, 'NEW LINE': 0 }
-    
+    session_new = {'start_time':None, 'end_time': None, 'BULK CHANGE': 0, 'DELETE': 0, 'LINE UPDATE': 0, 'NEW LINE': 0 ,'largest_change':0}
+    session = {}
     sessions = []
     start = None
     for record in data:
         ts = record['time']
-        
+  
         if start is None:
             start = ts
+            session = session_new.copy()
+            session['start_time'] = record['time']
+  
+        if (ts - start) >  threshold :
+            
+            sessions.append(session.copy())
+            start = ts
+            session = session_new.copy()
+            session['start_time'] = record['time']
         else:
-            if ts - start >  threshold:
-                session_stats = {
-                    'start_time': start,
-                    'end_time': ts,
-                }
+            session['end_time'] = record['time']
+            session['BULK CHANGE'] += record['BULK CHANGE'];
+            session['DELETE'] += record['DELETE'];
+            session['LINE UPDATE'] += record['LINE UPDATE'];
+            session['NEW LINE'] += record['NEW LINE']; 
+            session['largest_change']  = max(session['BULK CHANGE'], session['DELETE'], session['LINE UPDATE'], session['NEW LINE'])
                    
+    sessions.append(session.copy())
     
+ 
     
-    print(data)
-    
-    return render_template('assignment_chart.html', data=data)
+    return render_template('assignment_chart.html', key=assignment_key, data=data, sessions = sessions)
 
 if __name__ == '__main__':
     app.run(debug=True)

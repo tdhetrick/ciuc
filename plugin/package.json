@@ -26,5 +26,9 @@
   "scripts": {},
 	"devDependencies": {
 		"@types/vscode": "^1.73.0"
-	}
+	},
+  "capabilities": {
+    "unrestrictedFileSystemAccess": true
+  }
+
 }

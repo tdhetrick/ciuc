@@ -21,34 +21,38 @@ const basetag = "CIUCTAG"
 let server_conn = false;
 let tryConn = true;
 let serverStatusBarItem;
+let assignmentKeyStatusBarItem;
 
 function activate(context) {
 
-	// Initialize the status bar 
 	updateServerStatusBar();
-
-	// Register the retry connection command
+	
 	registerRetryCommand(context);
 
 	editor = vscode.window.activeTextEditor;
 
-	document = editor.document;
-	let docText = document.getText();
+	if (typeof  editor !== "undefined"){
+		document = editor.document;
+		let docText = document.getText();
+		findAssignmentKey(basetag, docText);		
+	}
 
-
-	findAssignmentKey(basetag, docText);
-
+	updateKeyStatusBar();
 
 	console.log('Congratulations, your extension "cuic" is now active!');
 
-	let disposable = vscode.workspace.onDidChangeTextDocument((event) => {
-
-		if (assignmentKey.length == 0) {
-			findAssignmentKey(basetag, docText);
-
-		}
+	let handleChangeTextDocument = (event) => {
+		console.log('handleChangeTextDocument');
 
 		const eventDoc = event.document.getText()
+
+
+		if (assignmentKey.length == 0) {
+			findAssignmentKey(basetag, eventDoc);			
+		}
+		updateKeyStatusBar();
+
+		
 
 		console.log("doclen: " + eventDoc.length)
 
@@ -104,14 +108,29 @@ function activate(context) {
 			console.log(error);
 			console.log(change);
 		}
-	});
+	};
 
-	context.subscriptions.push(disposable);
+	let disposableChangeTextDoc = vscode.workspace.onDidChangeTextDocument(handleChangeTextDocument);
+    context.subscriptions.push(disposableChangeTextDoc);
+
+	let handleActiveEditorChanged = (editor) => {
+        if (editor && editor.document) {
+            assignmentKey = "";
+			updateKeyStatusBar();
+            disposableChangeTextDoc.dispose();
+            disposableChangeTextDoc = vscode.workspace.onDidChangeTextDocument(handleChangeTextDocument);
+            context.subscriptions.push(disposableChangeTextDoc);
+			console.log('handleActiveEditorChanged');
+        }
+    };
+
+	let disposableActiveEditorChanged = vscode.window.onDidChangeActiveTextEditor(handleActiveEditorChanged);
+
+	context.subscriptions.push(disposableActiveEditorChanged);
 
 }
 
 function findAssignmentKey(tag, docText) {
-
 
 	let key_found = false;
 
@@ -120,7 +139,10 @@ function findAssignmentKey(tag, docText) {
 	}
 
 	let tag_s = docText.indexOf(tag);
-	while (tag_s >= 0) {
+
+	console.log(tag_s)
+
+	if (tag_s >= 0) {
 		const tag_l = tag.length;
 		const tag_e = docText.indexOf("#", tag_s);
 
@@ -129,57 +151,14 @@ function findAssignmentKey(tag, docText) {
 		if (foundText.length == 9) {
 			assignmentKey = foundText;
 			console.log('assignmentKey:' + foundText)
-			const startPos = document.positionAt(tag_s);
-			const endPos = document.positionAt(tag_e + 1);
-			tagPositions.push(new vscode.Range(startPos, endPos));
-			const fullLineRange = document.lineAt(startPos.line).rangeIncludingLineBreak;
-			//tagPosition.push(fullLineRange);
+	
 			if (!key_found) {
-				updateMessageDecorations("Assignment Tag Found");
-				updateColorDecorations(editor.document);
+	
 			}
 		}
-
-
-		tag_s = docText.indexOf(tag, tag_e + 1);
 	}
 
 }
-
-
-function updateColorDecorations() {
-
-	const decorationType = vscode.window.createTextEditorDecorationType({
-		backgroundColor: 'rgba(255, 255, 102, 0.1)'
-	});
-
-	editor.setDecorations(decorationType, tagPositions);
-}
-
-function updateMessageDecorations(message) {
-
-	const messageDecorationType = vscode.window.createTextEditorDecorationType({
-		after: {
-			contentText: message,
-			color: 'rgba(155, 155, 155)',
-			margin: '0 0 0 3em'
-		},
-		rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
-	});
-
-	// Apply the decoration 
-	const messageDecorations = tagPositions.map(position => ({
-		range: new vscode.Range(
-			position.end,
-			position.end
-		)
-	}));
-
-	editor.setDecorations(messageDecorationType, messageDecorations);
-
-}
-
-
 
 
 function levenshtein(a, b) {
@@ -210,9 +189,14 @@ function levenshtein(a, b) {
 }
 
 function sendDataToServer() {
-	console.log("Sending...");
-	if (pending_data.length !== 0) {
+	if (!tryConn){
+		console.log("Not Sending");
+		return;
+	}
 
+	
+	if (pending_data.length !== 0) {
+		console.log("Sending...");
 		console.log('Sending Data of length:', pending_data.length);
 		console.log('Sending Data:', JSON.stringify(pending_data));
 
@@ -223,52 +207,48 @@ function sendDataToServer() {
 			},
 			body: JSON.stringify(pending_data)
 		})
-			.then(response => response.json())
-			.then(result => {
-				console.log('Data sent successfully:', result);
-				pending_data = [];
-				if (!server_conn) {
-					updateMessageDecorations("Server Connected");
-					server_conn = true;
-					updateServerStatusBar();
-				}
-			})
-			.catch(error => {
-
-				updateMessageDecorations("Server Not Connected");
-				server_conn = false;
-				tryConn = false;
+		.then(response => response.json())
+		.then(result => {
+			console.log('Data sent successfully:', result);
+			pending_data = [];
+			if (!server_conn) {
+				server_conn = true;
 				updateServerStatusBar();
+			}
+		})
+		.catch(error => {
 
-				console.error('Error sending data:', error,);
-			});
+			
+			server_conn = false;
+			tryConn = false;
+			updateServerStatusBar();
+
+			console.error('Error sending data:', error,);
+		});
 	}
 
 }
-
-setInterval(() => {
-	if (tryConn){
-		sendDataToServer();	
-	}
-	
-}, SEND_INTERVAL);
 
 
 
 function updateServerStatusBar() {
     
     if (!serverStatusBarItem) {
-        serverStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+        serverStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
         serverStatusBarItem.command = 'extension.retryConnection';
     }
 
     
 	if (server_conn) {
-		serverStatusBarItem.text = "$(cloud-upload) Connected";
+		serverStatusBarItem.text = "CIUC $(cloud-upload) Connected";
 		serverStatusBarItem.color = 'white'; // or any color indicating success
 		serverStatusBarItem.tooltip = "Server is connected";
-	} else {
-		serverStatusBarItem.text = "$(alert) Not Connected - Click to Retry";
+	} else if (!server_conn && tryConn){
+		serverStatusBarItem.text = "CIUC $(cloud-upload) Connection pending....";
+		serverStatusBarItem.color = 'yellow'; // or any color indicating success
+		serverStatusBarItem.tooltip = "Will connect on request";
+	}else {
+		serverStatusBarItem.text = "CIUC $(alert) Not Connected - Click to Retry";
 		serverStatusBarItem.color = 'red';
 		serverStatusBarItem.tooltip = "Server is not connected. Click to retry.";
 	}
@@ -276,15 +256,32 @@ function updateServerStatusBar() {
     
 }
 
+function updateKeyStatusBar(){
+
+	if (!assignmentKeyStatusBarItem) {
+        assignmentKeyStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 102);
+    }
+
+	if (assignmentKey.length !== 0){
+		assignmentKeyStatusBarItem.text = "CIUC $(info) Assignment Key Found";
+		assignmentKeyStatusBarItem.color = 'white'; // or any color indicating success
+	}else{
+		assignmentKeyStatusBarItem.text = "CIUC $(alert) Assignment Key Not Found";
+		assignmentKeyStatusBarItem.color = 'red'; // or any color indicating success
+	}
+
+	assignmentKeyStatusBarItem.show();
+}
+
 
 function registerRetryCommand(context) {
-    let disposable = vscode.commands.registerCommand('extension.retryConnection', function () {
-        // You may want to show a message or do something else before retrying
-        vscode.window.showInformationMessage('Trying to reconnect to the server...');
-        
-        tryConn = true;
-		sendDataToServer()
 
+    let disposable = vscode.commands.registerCommand('extension.retryConnection', function () {
+
+		tryConn = true;
+		sendDataToServer()
+        
+        vscode.window.showInformationMessage('Trying to reconnect to the server...');
         
     });
 
@@ -292,13 +289,88 @@ function registerRetryCommand(context) {
 }
 
 
+setInterval(() => {
+	if (tryConn){
+		sendDataToServer();
+			
+	}
+	//sendDataToCSV();
+
+}, SEND_INTERVAL);
+
+
+
 // this method is called when your extension is deactivated
-function deactivate() { }
+function deactivate() {
+	console.log('CIUC deactivate')
+ }
 
 // eslint-disable-next-line no-undef
 module.exports = {
 	activate,
 	deactivate
 }
+
+function sendDataToCSV(){
+	if (pending_data.length !== 0) {
+		let resdata = resampleData(pending_data);
+		appendDataToCSV(resdata,"CIUCReport.csv")
+	}
+}
+
+function resampleData(dataArray) {
+    const resampled = {};
+
+    dataArray.forEach(data => {
+
+        const timeInSec = Math.floor(data.time.getTime() / 1000);
+        const key = `${timeInSec}_${data.change_event}`;
+
+        if (!resampled[key]) {
+            resampled[key] = {
+                assignmentKey: data.assignmentKey,
+                time: new Date(timeInSec * 1000), // Start of the second
+                lev: 0,
+                codeEvent: data.change_event
+            };
+        }
+
+        resampled[key].lev += data.lev;
+    });
+
+    return Object.values(resampled);
+}
+
+async function appendDataToCSV(data, fileName) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        vscode.window.showErrorMessage('No workspace is open to write to a file.');
+        return;
+    }
+
+    const fileUri = vscode.Uri.file(path.join(workspaceFolders[0].uri.fsPath, fileName));
+
+    try {       
+        await vscode.workspace.fs.stat(fileUri);
+    } catch (error) {
+        if (error.code === 'FileNotFound') {
+            
+            const headers = Object.keys(data[0]).join(',') + '\n';
+            await vscode.workspace.fs.writeFile(fileUri, Buffer.from(headers));
+        } else {           
+            vscode.window.showErrorMessage(`Failed to write file: ${error.message}`);
+            return;
+        }
+    }
+   
+    const csvRows = data.map(row => {
+        return Object.values(row).join(',');
+    }).join('\n') + '\n';
+
+    await vscode.workspace.fs.appendFile(fileUri, Buffer.from(csvRows));
+}
+
+
+
 
 

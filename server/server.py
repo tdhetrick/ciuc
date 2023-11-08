@@ -295,15 +295,35 @@ def assignmentdata(assignment_key):
     df_pivot = df_grouped.pivot(index='time', columns='event', values='value').fillna(0).reset_index()
     
     #{BULK CHANGE: 0, DELETE: 0, LINE UPDATE: 0, NEW LINE: 4, time: 'Wed, 25 Oct 2023 16:46:34 GMT'}
-    #df_all_time = df_pivot.to_dict(orient='records')
-    
+       
     df_all_time = df_pivot.set_index('time')
     
     df_resampled =  df_all_time.resample('30T').sum().reset_index()
     df_resampled = df_resampled[df_resampled.drop(columns='time').sum(axis=1) != 0]
-
     
     data = df_resampled.to_dict(orient='records')
+    #{'time': Timestamp('2023-10-25 16:30:00'), 'BULK CHANGE': 9.0, 'DELETE': 280.0, 'LINE UPDATE': 85.0, 'NEW LINE': 16.0}
+    
+    threshold = datetime.timedelta(hours=1)
+    session_new = {'start_time': start, 'end_time': ts, 'BULK CHANGE': 0, 'DELETE': 0, 'LINE UPDATE': 0, 'NEW LINE': 0 }
+    
+    sessions = []
+    start = None
+    for record in data:
+        ts = record['time']
+        
+        if start is None:
+            start = ts
+        else:
+            if ts - start >  threshold:
+                session_stats = {
+                    'start_time': start,
+                    'end_time': ts,
+                }
+                   
+    
+    
+    print(data)
     
     return render_template('assignment_chart.html', data=data)
 

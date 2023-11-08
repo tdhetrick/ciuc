@@ -31,7 +31,7 @@
                             <ul class="w3-ul w3-card-4">
                                 {% for ua in user.assigned_tasks %}
                                 
-                                    <a href="{{ url_for('assignmentdata',assignment_key=ua.unique_key) }}"><li class="w3-padding-small">{{ ua.assignment.title }} Key: {{ua.unique_key}}</li></a>
+                                    <li class="w3-padding-small"><a href="{{ url_for('assignmentdata',assignment_key=ua.unique_key) }}">{{ ua.assignment.title }}</a> Key: {{ua.unique_key}}#</li>
                                 
                                 {% else %}
                                     <span>No assignments assigned</span>

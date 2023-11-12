@@ -97,7 +97,7 @@ function activate(context) {
 				lev = levenshtein(prevTxt, currentTxt)
 				console.log("lev score: " + lev);
 
-				const sendData = { assignmentKey: assignmentKey, time: new Date(), lev: lev, codeEvent: change_event }
+				const sendData = { assignmentKey: assignmentKey, time: new Date(), lev: lev, codeEvent: change_event ,length:eventDoc.length}
 
 				pending_data.push(sendData);
 

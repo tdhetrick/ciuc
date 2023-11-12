@@ -56,6 +56,7 @@ def receive_data():
         # If the difference between current and next time is less than 1 second and have the same codeEvent
         if (next_time - current_time).total_seconds() < 1 and df.iloc[i]['codeEvent'] == df.iloc[i+1]['codeEvent']:
             df.at[df.index[i], 'lev'] += df.iloc[i+1]['lev']
+            df.at[df.index[i], 'length'] = max( df.iloc[i+1]['length'], df.at[df.index[i], 'length'] )
             df.drop(df.index[i+1], inplace=True)
             df.reset_index(drop=True, inplace=True)  # Reset index after dropping row
         else:
@@ -70,7 +71,7 @@ def receive_data():
     for index, row in df.iterrows():
         #{'assignmentKey': 'CIUCTAG1A2', 'time': '2023-10-04T17:27:47.596Z', 'lev': 0, 'codeEvent': ''}
 
-        code_event = CodeEvent(row['assignmentKey'], row['time'],row['lev'],row['codeEvent'] )
+        code_event = CodeEvent(row['assignmentKey'], row['time'],row['lev'],row['codeEvent'],row['length'] )
         db.session.add(code_event)
         db.session.commit()
 
@@ -304,7 +305,11 @@ def assignmentdata(assignment_key):
         print("no range")
         events = CodeEvent.query.filter_by(assignment_key=key).all()    
         
-    df = pd.DataFrame([(e.time, e.lev_count, e.event) for e in events], columns=['time', 'value', 'event'])
+    df = pd.DataFrame([(e.time, e.lev_count, e.event, e.length) for e in events], columns=['time', 'value', 'event','length'])
+    
+    df_length = pd.DataFrame([(e.time, e.length) for e in events], columns=['time', 'length'])
+    df_length = df_length.set_index('time')
+    # df_length = df_length.drop_duplicates(subset='length', keep='first')
     
     df_grouped = df.groupby(['time', 'event']).sum().reset_index()
     
@@ -314,6 +319,8 @@ def assignmentdata(assignment_key):
        
     df_all_time = df_pivot.set_index('time')
     
+    df_all_time = pd.merge(df_all_time, df_length, on='time', how='inner')
+    
     df_resampled =  df_all_time.resample('10S').sum().reset_index()
     df_resampled = df_resampled[df_resampled.drop(columns='time').sum(axis=1) != 0]
     
@@ -322,37 +329,40 @@ def assignmentdata(assignment_key):
     
     # Compute work sessions
     threshold = datetime.timedelta(hours=1)
-    session_new = {'start_time':None, 'end_time': None, 'BULK CHANGE': 0, 'DELETE': 0, 'LINE UPDATE': 0, 'NEW LINE': 0 ,'largest_change':0}
+    session_new = {'start_time':None, 'end_time': None, 'BULK CHANGE': 0, 'DELETE': 0, 'LINE UPDATE': 0, 'NEW LINE': 0 ,'largest_change':0 , 'max_length':0, 'index':0}
     session = {}
     sessions = []
     start = None
+    index = 1
     for record in data:
         ts = record['time']
   
         if start is None:
             start = ts
+            session['index'] = index
             session = session_new.copy()
             session['start_time'] = record['time']
   
         if (ts - start) >  threshold :
-            
+            index += 1
             sessions.append(session.copy())
             start = ts
             session = session_new.copy()
             session['start_time'] = record['time']
         else:
+            session['index'] = index
             session['end_time'] = record['time']
-            session['BULK CHANGE'] += record['BULK CHANGE'];
-            session['DELETE'] += record['DELETE'];
-            session['LINE UPDATE'] += record['LINE UPDATE'];
-            session['NEW LINE'] += record['NEW LINE']; 
-            session['largest_change']  = max(session['BULK CHANGE'], session['DELETE'], session['LINE UPDATE'], session['NEW LINE'])
+            session['BULK CHANGE'] += record.get('BULK CHANGE', 0);
+            session['DELETE'] += record.get('DELETE', 0);
+            session['LINE UPDATE'] += record.get('LINE UPDATE', 0);
+            session['NEW LINE'] += record.get('NEW LINE', 0); 
+            session['largest_change']  = max(record.get('BULK CHANGE', 0), record.get('DELETE', 0), record.get('LINE UPDATE', 0), record.get('NEW LINE', 0),session['largest_change'])
+            session['length'] = record['length']
+            
                    
     sessions.append(session.copy())
     
- 
-    
-    return render_template('assignment_chart.html', key=assignment_key, data=data, sessions = sessions)
+    return render_template('assignment_chart.html', key=assignment_key, data=data, sessions = sessions )
 
 if __name__ == '__main__':
     app.run(debug=True)

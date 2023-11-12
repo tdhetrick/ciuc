@@ -1,14 +1,32 @@
 {% extends "./base.html" %}
 
 {% block content %}
-
-<ul class="w3-ul">
-    <li><h3>Work Sessions</h3></li>
+<style>
+    .work-session-card {
+        margin-top: 20px;
+    }
+    .work-session-content {
+        padding: 15px;
+    }
+</style>
+<div class="w3-row-padding">
     {% for session in sessions %}
-        <li><a href="{{ url_for('assignmentdata',assignment_key=key, start=session.start_time, end=session.end_time) }}">Start:{{ session.start_time }} End:{{ session.end_time }}</a> Biggest Change:{{ session.largest_change }}</li>
-
+    <div class="w3-col s12 m6 l4">
+        <div class="w3-card-4 work-session-card ">
+            <header class="w3-container w3-light-grey">
+                <h3><a href="{{ url_for('assignmentdata',assignment_key=key, start=session.start_time, end=session.end_time) }}">Work Session {{ session.index }}</a></h3>
+            </header>
+            <div class="w3-container work-session-content">
+                <p><b>Begin:</b> {{ session.start_time }}</p>
+                <p><b>End :</b> {{ session.start_time }}</p>
+                <p><b>Largest change </b>{{ session.largest_change }}</p>
+                <p><b>End Length</b>{{ session.length }}</p>
+            </div>
+    
+        </div>
+    </div>
     {% endfor %}
-</ul>
+</div>
 
 <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --> 
 
@@ -24,17 +42,29 @@
 
 <script>
     const dataJson = {{ data|tojson }};
+   
     console.log(dataJson) 
+
     const labels = dataJson.map(item => moment(item.time));
 
 
     const datasets = [];
     
     for (const key in dataJson[0]) {
-        if (key !== 'time') {
+        if (key !== 'time' && key !== 'length') {
             const dataset = {
                 label: key,
                 data: dataJson.map(item => item[key]),
+                //fill: false,
+                //borderColor: /* Choose a color based on the event type or set a default */
+            };
+            datasets.push(dataset);
+        }
+        if (key !== 'time' && key == 'length') {
+            const dataset = {
+                label: key,
+                data: dataJson.map(item => item[key]),
+                type: 'line',
                 //fill: false,
                 //borderColor: /* Choose a color based on the event type or set a default */
             };

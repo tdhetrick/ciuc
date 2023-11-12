@@ -17,7 +17,8 @@ class User(db.Model):
     password = db.Column(db.String(120), nullable=False)
     fname = db.Column(db.String(50), nullable=False)  
     lname = db.Column(db.String(50), nullable=False) 
-    email = db.Column(db.String(100), nullable=False, unique=True)  
+    email = db.Column(db.String(100), nullable=False, unique=True)
+    type = db.Column(db.String(32), nullable=False)    
     classes = db.relationship('Class', secondary=user_classes, backref='students')
     #assignments = db.relationship('Assignment', secondary=user_assignments, backref='students')
     assigned_tasks = db.relationship('UserAssignment', back_populates='user')
@@ -28,6 +29,7 @@ class User(db.Model):
         self.fname = fname
         self.lname = lname
         self.email = email
+        self.type = "user"
 
 
 class Class(db.Model):
@@ -75,9 +77,11 @@ class CodeEvent(db.Model):
     time = db.Column(db.DateTime)
     lev_count = db.Column(db.Integer)  
     event = db.Column(db.String(16))
+    length = db.Column(db.Integer) 
  
-    def __init__(self, assignment_key, time ,lev_count ,event):
+    def __init__(self, assignment_key, time ,lev_count ,event, length):
         self.assignment_key = assignment_key
         self.time = time
         self.lev_count = lev_count
         self.event = event
+        self.length = length

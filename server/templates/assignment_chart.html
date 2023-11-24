@@ -11,16 +11,20 @@
 </style>
 <div class="w3-row-padding">
     {% for session in sessions %}
-    <div class="w3-col s12 m6 l4">
-        <div class="w3-card-4 work-session-card ">
+    <div class="w3-col s12 m4 l2">
+        <div class="w3-card work-session-card ">
             <header class="w3-container w3-light-grey">
                 <h3><a href="{{ url_for('assignmentdata',assignment_key=key, start=session.start_time, end=session.end_time) }}">Work Session {{ session.index }}</a></h3>
             </header>
             <div class="w3-container work-session-content">
-                <p><b>Begin:</b> {{ session.start_time }}</p>
-                <p><b>End :</b> {{ session.start_time }}</p>
-                <p><b>Largest change </b>{{ session.largest_change }}</p>
-                <p><b>End Length</b>{{ session.length }}</p>
+                <b>Begin:</b> {{ session.start_time }}<br>
+                <b>End :</b> {{ session.start_time }}<br>
+                <b>Events :</b><br>
+                <ul class="w3-ul" >
+                {% for sus in session.sus %}
+                    <li class="w3-small w3-padding-small">{{ sus }}</li>
+                {% endfor %}
+                </ul>
             </div>
     
         </div>
@@ -55,8 +59,7 @@
             const dataset = {
                 label: key,
                 data: dataJson.map(item => item[key]),
-                //fill: false,
-                //borderColor: /* Choose a color based on the event type or set a default */
+                yAxisID: 'y-line'  
             };
             datasets.push(dataset);
         }
@@ -65,8 +68,7 @@
                 label: key,
                 data: dataJson.map(item => item[key]),
                 type: 'line',
-                //fill: false,
-                //borderColor: /* Choose a color based on the event type or set a default */
+                yAxisID: 'y-scatter'
             };
             datasets.push(dataset);
         }
@@ -83,15 +85,25 @@
             datasets: datasets
         },
         options: {
+            animation: {
+                duration: 0
+            },
             scales:{      
-                y: {
-                      display: true,
-                      ticks: {
-                          beginAtZero: false,
-                          steps: 5,
-                          stepValue: 5
-                      }
-                  },
+    
+                 'y-line': { // Define the first y-axis for the line dataset
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                },
+                'y-scatter': { // Define the second y-axis for the scatter dataset
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    // Ensures that this axis does not use the same grid lines as the first y-axis
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }, 
                   x: {
                     display: true,
                     type: 'time',

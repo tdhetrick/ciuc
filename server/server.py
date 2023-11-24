@@ -23,6 +23,12 @@ with app.app_context():
     
 CORS(app)
 
+@app.context_processor
+def inject_user_info():
+    
+    user_info = get_current_user(session['user_id'])
+    return dict(user_info=user_info)
+
 @app.route('/')
 def home():
     if session.get('username'):
@@ -53,7 +59,6 @@ def receive_data():
         current_time = df.iloc[i]['time']
         next_time = df.iloc[i+1]['time']
 
-        # If the difference between current and next time is less than 1 second and have the same codeEvent
         if (next_time - current_time).total_seconds() < 1 and df.iloc[i]['codeEvent'] == df.iloc[i+1]['codeEvent']:
             df.at[df.index[i], 'lev'] += df.iloc[i+1]['lev']
             df.at[df.index[i], 'length'] = max( df.iloc[i+1]['length'], df.at[df.index[i], 'length'] )
@@ -86,6 +91,7 @@ def login():
             flash('Successfully logged in!', 'success')
             session['username'] = user.username
             session['user_id'] = user.id
+            session['type'] = user.type
             return redirect(url_for('home'))
         else:
             flash('Login unsuccessful. Please check username and password.', 'danger')
@@ -321,7 +327,7 @@ def assignmentdata(assignment_key):
     
     df_all_time = pd.merge(df_all_time, df_length, on='time', how='inner')
     
-    df_resampled =  df_all_time.resample('10S').sum().reset_index()
+    df_resampled =  df_all_time.resample('60S').sum().reset_index()
     df_resampled = df_resampled[df_resampled.drop(columns='time').sum(axis=1) != 0]
     
     data = df_resampled.to_dict(orient='records')
@@ -332,11 +338,22 @@ def assignmentdata(assignment_key):
     session_new = {'start_time':None, 'end_time': None, 'BULK CHANGE': 0, 'DELETE': 0, 'LINE UPDATE': 0, 'NEW LINE': 0 ,'largest_change':0 , 'max_length':0, 'index':0}
     session = {}
     sessions = []
+    sus = []
+    prev_record = {}
     start = None
     index = 1
     for record in data:
         ts = record['time']
-  
+        
+        if (prev_record.get('length')  ):
+            diff = record['length'] - prev_record['length']
+            
+            if diff > 0 and diff/record['length'] > .2: #or record['lev'] > 200:
+                print(diff,record['length'], prev_record['length'] )
+                print(diff/prev_record['length'])
+                sus.append(record['time'])
+        prev_record = record
+        
         if start is None:
             start = ts
             session['index'] = index
@@ -345,6 +362,8 @@ def assignmentdata(assignment_key):
   
         if (ts - start) >  threshold :
             index += 1
+            print(sus)
+            sus = []
             sessions.append(session.copy())
             start = ts
             session = session_new.copy()
@@ -358,6 +377,8 @@ def assignmentdata(assignment_key):
             session['NEW LINE'] += record.get('NEW LINE', 0); 
             session['largest_change']  = max(record.get('BULK CHANGE', 0), record.get('DELETE', 0), record.get('LINE UPDATE', 0), record.get('NEW LINE', 0),session['largest_change'])
             session['length'] = record['length']
+            session['sus'] = sus
+            
             
                    
     sessions.append(session.copy())

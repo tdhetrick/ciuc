@@ -9,3 +9,6 @@ def add_user(username, plaintext_password):
     db.session.add(new_user)
     db.session.commit()
     
+def get_current_user(user_id):
+    return User.query.filter_by(id=user_id).first()    
+    

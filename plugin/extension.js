@@ -22,8 +22,12 @@ let server_conn = false;
 let tryConn = true;
 let serverStatusBarItem;
 let assignmentKeyStatusBarItem;
+let prevData = {};
 
 function activate(context) {
+
+
+    
 
 	updateServerStatusBar();
 	
@@ -98,6 +102,17 @@ function activate(context) {
 				console.log("lev score: " + lev);
 
 				const sendData = { assignmentKey: assignmentKey, time: new Date(), lev: lev, codeEvent: change_event ,length:eventDoc.length}
+
+				if (prevData){
+					if (sendData.length > prevData.length){
+						let diff = sendData.length - prevData.length
+						if (diff / prevData.length > .2 || sendData.lev > 200 ){
+							vscode.window.showWarningMessage('Please make sure large changes do not violate academic integrity.');
+						}
+					} 
+				}
+
+				prevData = sendData;
 
 				pending_data.push(sendData);
 
@@ -369,6 +384,7 @@ async function appendDataToCSV(data, fileName) {
 
     await vscode.workspace.fs.appendFile(fileUri, Buffer.from(csvRows));
 }
+
 
 
 
